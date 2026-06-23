@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  evolution:
+    image: atendai/evolution-api:latest
+    container_name: evolution-api
+    restart: always
+    ports:
+      - "8080:8080"
+
+    environment:
+      - SERVER_URL=http://host.docker.internal:8080
+      - CORS_ORIGIN=*
+      - WEBSOCKET_ENABLED=true
+      - SOCKET_IO_ENABLED=true
+
+      - AUTHENTICATION_API_KEY=garino123
+
+      # 🟢 DATABASE (NEON POSTGRES)
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://neondb_owner:npg_yEipxSK9ct6G@ep-dawn-hall-ac9v66mg-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+
+      # 🔴 REDIS (IMPORTANTE)
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://evolution-redis:6379
+
+    depends_on:
+      - redis
+
+    volumes:
+      - evolution_data:/app/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: evolution-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  evolution_data:
+
+    
