@@ -7,6 +7,7 @@ import qrcode from "qrcode-terminal";
 import { Pool } from "pg";
 import dotenv from "dotenv";
 import { buscarMedida } from "./consulta.js";
+import express from "express";
 
 dotenv.config();
 
@@ -214,3 +215,19 @@ async function startBot() {
 }
 
 startBot();
+
+// ====================
+// EXPRESS PARA RENDER
+// ====================
+
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Bot online");
+});
+
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor en puerto ${PORT}`);
+});
