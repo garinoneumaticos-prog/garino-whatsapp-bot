@@ -42,6 +42,18 @@ async function startBot() {
     const clean = texto.trim();
     const session = userState[jid] || null;
 
+    if (
+      clean.startsWith("📦 ¿Qué medida") ||
+      clean.startsWith("📦 Resultados") ||
+      clean.startsWith("❌ No encontré") ||
+      clean.startsWith("🏷 Marcas") ||
+      clean.startsWith("💰 Lista de precios") ||
+      clean.startsWith("✅ OK")
+    ) {
+      console.log("⛔ Mensaje generado por el bot");
+      return;
+    }
+
     console.log("================================");
     console.log("📩 TEXTO:", clean);
     console.log("👤 JID:", jid);
@@ -97,7 +109,9 @@ async function startBot() {
 
       for (const i of result.rows) {
         respuesta +=
-`🚗 ${i.descripcion}
+`🏷 ${i.marca}
+🚗 ${i.descripcion}
+📂 Rubro: ${i.rubro}
 💰 $${Number(i.precio).toLocaleString("es-AR")}
 📦 Stock: ${i.stock}
 
@@ -112,67 +126,58 @@ async function startBot() {
     // =========================
     // STOCK (respuesta medida)
     // =========================
-    const regex = /(\d{3})\s?(\d{2})\s?(\d{2})/;
-    const match = clean.match(regex);
+    if (session === "awaiting_stock") {
 
-    if (session === "awaiting_stock" && match) {
       delete userState[jid];
-
-      const [, ancho, perfil, rodado] = match;
-      const medida = `${ancho}/${perfil}R${rodado}`;
-
-      const result = await buscarMedida(ancho, perfil, rodado);
-
+    
+      let busqueda = clean.trim();
+    
+      // 200 65 15 -> 200/65R15
+      const numeros = busqueda.match(/\d+/g);
+    
+      if (numeros?.length === 3) {
+        busqueda =
+          `${numeros[0]}/${numeros[1]}R${numeros[2]}`;
+      }
+    
+      // 200 65 -> 200/65
+      else if (numeros?.length === 2) {
+        busqueda =
+          `${numeros[0]}/${numeros[1]}`;
+      }
+    
+      // 200 -> queda 200
+    
+      const result = await buscarMedida(busqueda);
+    
       if (!result.length) {
         await sock.sendMessage(jid, {
-          text: `❌ No hay stock para ${medida}`
+          text: `❌ No encontré resultados para ${busqueda}`
         });
         return;
       }
-
-      let respuesta = `📦 Stock para ${medida}\n\n`;
-
+    
+      let respuesta =
+    `📦 Resultados para ${busqueda}
+    
+    `;
+    
       for (const i of result) {
+    
         respuesta +=
-`🚗 ${i.descripcion}
+`🏷 ${i.marca}
+🚗 ${i.descripcion}
+📂 Rubro: ${i.rubro}
 💰 $${Number(i.precio).toLocaleString("es-AR")}
 📦 Stock: ${i.stock}
-
-`;
+    
+    `;
       }
-
-      await sock.sendMessage(jid, { text: respuesta });
-      return;
-    }
-
-    // =========================
-    // STOCK directo (opcional)
-    // =========================
-    if (match) {
-      const [, ancho, perfil, rodado] = match;
-      const medida = `${ancho}/${perfil}R${rodado}`;
-
-      const result = await buscarMedida(ancho, perfil, rodado);
-
-      if (!result.length) {
-        await sock.sendMessage(jid, {
-          text: `❌ No hay stock para ${medida}`
-        });
-        return;
-      }
-
-      let respuesta = `📦 ${result.length} opciones para ${medida}\n\n`;
-
-      for (const i of result) {
-        respuesta +=
-`🚗 ${i.descripcion}
-💰 $${Number(i.precio).toLocaleString("es-AR")}
-📦 Stock: ${i.stock}
-
-`;
-      }
-
-      await sock.sendMessage(jid, { text: respuesta });
+    
+      await sock.sendMessage(jid, {
+        text: respuesta
+      });
+    
       return;
     }
 
